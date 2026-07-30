@@ -1,0 +1,9 @@
+{
+  "ts": 1000.0,
+  "detections": [
+    {"target_id": 1, "cls": "person", "conf": 0.94, "cx": 0.30, "cy": 0.55, "w": 0.12, "h": 0.32, "error_x": -0.20, "error_y": 0.05, "attributes": {"color": "红", "caption": "穿红色卫衣的男生"}},
+    {"target_id": 2, "cls": "person", "conf": 0.91, "cx": 0.58, "cy": 0.52, "w": 0.11, "h": 0.30, "error_x": 0.08, "error_y": 0.02, "attributes": {"color": "蓝", "caption": "穿蓝色外套的女生"}},
+    {"target_id": 3, "cls": "person", "conf": 0.88, "cx": 0.78, "cy": 0.50, "w": 0.10, "h": 0.29, "error_x": 0.28, "error_y": 0.00, "attributes": {"color": "黑", "caption": "穿黑色T恤的男生"}},
+    {"target_id": 4, "cls": "dog", "conf": 0.83, "cx": 0.45, "cy": 0.74, "w": 0.09, "h": 0.12, "error_x": -0.05, "error_y": 0.24, "attributes": {"color": "棕", "caption": "一只棕色的柯基"}}
+  ]
+}

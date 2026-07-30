@@ -1,0 +1,6 @@
+# 核心（骨架 + demo）：零依赖，纯标准库就能跑。
+#
+# 下面是接真实硬件时才需要的，用到再装：
+# pymavlink      # 读板上 MAVLink 遥测 / 走 offboard 回传
+# opencv-python  # 拉 RTSP 帧、抠 bbox 取主色（enrich）
+# openai-whisper # 本地语音转文字（也可用浏览器自带的 Web Speech API）
