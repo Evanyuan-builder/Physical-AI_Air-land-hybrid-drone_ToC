@@ -39,20 +39,33 @@ class GroundAgent:
         self.memory = memory or PreferenceMemory()
         self.low_battery_pct = low_battery_pct
         self.use_llm = use_llm
+        self.holding_id = None      # 当前正在跟谁（给延续规则用）
 
     def handle(self, text: str, auto_send: bool = True) -> Decision:
         frame = self.yolo.latest()
         tele = self.tele.latest()
         owner_id = self.memory.match_owner(frame)
 
-        intent = grounding.ground(text, frame, tele, owner_id=owner_id, use_llm=self.use_llm)
+        # 板子当前状态 + 上一次锁的人 —— 「镜头放平」这种只调机位的话靠它延续目标
+        current = getattr(self.downlink, "last_state", None)
+        intent = grounding.ground(text, frame, tele, owner_id=owner_id,
+                                  use_llm=self.use_llm, current=current,
+                                  holding_id=self.holding_id)
         intent = self._safety(intent, frame, tele)
 
         sent, result = False, None
         if auto_send and not intent.needs_confirm and intent.action != "idle":
             result = self.downlink.send(intent)
             sent = True
+        self._remember_hold(intent)
         return Decision(intent=intent, frame=frame, tele=tele, sent=sent, result=result)
+
+    def _remember_hold(self, intent: Intent) -> None:
+        """记住当前跟的是谁；明确停/返航就清掉。"""
+        if intent.action in ("stop", "return", "idle"):
+            self.holding_id = None
+        elif intent.target_id is not None:
+            self.holding_id = intent.target_id
 
     def confirm_pick(self, target_id: int, base: Intent) -> Decision:
         """防翻车：用户在候选里点了一个，落定并下发。"""
@@ -62,9 +75,11 @@ class GroundAgent:
         label = d.label if d else f"#{target_id}"
         intent = Intent(action=base.action if base.action != "idle" else "follow",
                         target_id=target_id, form=base.form,
+                        height_m=base.height_m, camera_mode=base.camera_mode,
                         reason=f"你点选了 {label}，锁定")
         intent = self._safety(intent, frame, tele)
         result = self.downlink.send(intent) if intent.action != "idle" else None
+        self._remember_hold(intent)
         return Decision(intent=intent, frame=frame, tele=tele,
                         sent=result is not None, result=result)
 
@@ -79,6 +94,8 @@ class GroundAgent:
         if intent.action in ("follow", "orbit", "shoot", "lock") \
                 and (intent.target_id is None or intent.target_id not in frame.ids()) \
                 and not intent.needs_confirm:
+            # 形态/高度/取景保持不变去搜 —— 别因为丢了目标把机位也重置了
             return Intent(action="search", form=intent.form,
+                          height_m=intent.height_m, camera_mode=intent.camera_mode,
                           reason="没锁到符合的目标，转入搜索，出现就接着跟")
         return intent
